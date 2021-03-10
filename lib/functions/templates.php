@@ -68,7 +68,7 @@ function mai_register_template_part_cpt() {
 
 	$db_version = mai_get_option( 'db-version', false );
 
-	// We need the old
+	// We need the old post type during upgrade/migration.
 	if ( $db_version && version_compare( $db_version, '2.11.0', '<' ) && ! post_type_exists( 'wp_template_part' ) ) {
 		register_post_type( 'wp_template_part', $args );
 		register_meta( 'post', 'theme',
