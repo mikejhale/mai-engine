@@ -59,7 +59,7 @@ function mai_do_upgrade() {
 	}
 
 	// Update database version after upgrade.
-	// mai_update_option( 'db-version', $plugin_version );
+	mai_update_option( 'db-version', $plugin_version );
 }
 
 /**
@@ -103,10 +103,11 @@ function mai_upgrade_2_11_0() {
 	}
 	wp_reset_postdata();
 
-	delete_transient( 'mai_template_parts' );
-	delete_transient( 'mai_demo_template_parts' );
-
-	if ( ! $success ) {
+	if ( $success ) {
+		delete_transient( 'mai_template_parts' );
+		delete_transient( 'mai_demo_template_parts' );
+		flush_rewrite_rules( false );
+	} else {
 		add_action( 'admin_notices', function() {
 			printf(
 				'<div class="notice notice-error"><p>%s <a target="_blank" href="https://docs.bizbudding.com/support/">%s</a>.</p></div>',
