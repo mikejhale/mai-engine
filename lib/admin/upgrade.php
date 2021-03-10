@@ -50,7 +50,11 @@ function mai_do_upgrade() {
 		}
 
 		if ( version_compare( $db_version, '2.11.0', '<' ) ) {
-			mai_upgrade_2_11_0();
+			$success = mai_upgrade_2_11_0();
+
+			if ( ! $success ) {
+				return;
+			}
 		}
 	}
 
@@ -66,32 +70,34 @@ function mai_do_upgrade() {
  * @return void
  */
 function mai_upgrade_2_11_0() {
-
-	return;
-
-	$posts = new WP_Query(
+	$success = true;
+	$posts   = new WP_Query(
 		[
-			'post_type'      => 'wp_template_part',
-			'posts_per_page' => -1,
-			'post_status'    => 'any',
+			'post_type'              => 'wp_template_part',
+			'posts_per_page'         => -1,
+			'post_status'            => 'any',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'suppress_filters'       => false, // https://github.com/10up/Engineering-Best-Practices/issues/116
 		]
 	);
 
 	if ( $posts->have_posts() ) {
 		while ( $posts->have_posts() ) : $posts->the_post();
 			global $post;
+
+			if ( mai_template_part_exists( $post->post_name ) ) {
+				continue;
+			}
+
 			$post->post_type = 'mai_template_part';
 			$post->guid      = str_replace( 'wp_template_part', 'mai_template_part', $post->guid );
 			$post_id         = wp_insert_post( $post );
 
 			if ( is_wp_error( $post_id ) ) {
-				add_action( 'admin_notices', function() {
-					printf(
-						'<div class="notice notice-error"><p>%s <a target="_blank" href="https://docs.bizbudding.com/support/">%s</a>.</p></div>',
-						__( 'Error migrating template parts.', 'mai-engine' ),
-						__( 'Please contact BizBudding support.', 'mai-engine' )
-					);
-				});
+				$success = false;
+				break;
 			}
 		endwhile;
 	}
@@ -99,6 +105,18 @@ function mai_upgrade_2_11_0() {
 
 	delete_transient( 'mai_template_parts' );
 	delete_transient( 'mai_demo_template_parts' );
+
+	if ( ! $success ) {
+		add_action( 'admin_notices', function() {
+			printf(
+				'<div class="notice notice-error"><p>%s <a target="_blank" href="https://docs.bizbudding.com/support/">%s</a>.</p></div>',
+				__( 'Error migrating template parts.', 'mai-engine' ),
+				__( 'Please contact BizBudding support.', 'mai-engine' )
+			);
+		});
+	}
+
+	return $success;
 }
 
 /**
