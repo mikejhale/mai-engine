@@ -48,29 +48,57 @@ function mai_do_upgrade() {
 		if ( version_compare( $db_version, '2.0.1', '<' ) ) {
 			mai_upgrade_2_0_1();
 		}
+
+		if ( version_compare( $db_version, '2.11.0', '<' ) ) {
+			mai_upgrade_2_11_0();
+		}
 	}
 
 	// Update database version after upgrade.
-	mai_update_option( 'db-version', $plugin_version );
+	// mai_update_option( 'db-version', $plugin_version );
 }
 
 /**
- * Upgrade function for 0.2.0.
+ * Upgrade function for 2.11.0.
  *
- * @since 0.2.0
+ * @since 2.11.0
  *
  * @return void
  */
-function mai_upgrade_0_2_0() {
-	$data = [
-		'color-darkest'  => mai_get_option( 'color-dark' ),
-		'color-dark'     => mai_get_option( 'color-medium' ),
-		'color-medium'   => mai_get_option( 'color-muted' ),
-		'color-lighter'  => mai_get_option( 'color-light' ),
-		'color-lightest' => mai_get_option( 'color-white' ),
-	];
+function mai_upgrade_2_11_0() {
 
-	mai_update_data( $data );
+	return;
+
+	$posts = new WP_Query(
+		[
+			'post_type'      => 'wp_template_part',
+			'posts_per_page' => -1,
+			'post_status'    => 'any',
+		]
+	);
+
+	if ( $posts->have_posts() ) {
+		while ( $posts->have_posts() ) : $posts->the_post();
+			global $post;
+			$post->post_type = 'mai_template_part';
+			$post->guid      = str_replace( 'wp_template_part', 'mai_template_part', $post->guid );
+			$post_id         = wp_insert_post( $post );
+
+			if ( is_wp_error( $post_id ) ) {
+				add_action( 'admin_notices', function() {
+					printf(
+						'<div class="notice notice-error"><p>%s <a target="_blank" href="https://docs.bizbudding.com/support/">%s</a>.</p></div>',
+						__( 'Error migrating template parts.', 'mai-engine' ),
+						__( 'Please contact BizBudding support.', 'mai-engine' )
+					);
+				});
+			}
+		endwhile;
+	}
+	wp_reset_postdata();
+
+	delete_transient( 'mai_template_parts' );
+	delete_transient( 'mai_demo_template_parts' );
 }
 
 /**
@@ -80,7 +108,7 @@ function mai_upgrade_0_2_0() {
  *
  * @return void
  */
-function mai_upgrade_2_0_1() {
+ function mai_upgrade_2_0_1() {
 	$boxed_container = current_theme_supports( 'boxed-container' );
 	$site_layouts    = mai_get_option( 'site-layouts' );
 
@@ -104,6 +132,25 @@ function mai_upgrade_2_0_1() {
 		'color-link'       => mai_get_option( 'primary', $colors['link'] ),
 		'color-primary'    => mai_get_option( 'primary', $colors['primary'] ),
 		'color-secondary'  => mai_get_option( 'secondary', $colors['secondary'] ),
+	];
+
+	mai_update_data( $data );
+}
+
+/**
+ * Upgrade function for 0.2.0.
+ *
+ * @since 0.2.0
+ *
+ * @return void
+ */
+function mai_upgrade_0_2_0() {
+	$data = [
+		'color-darkest'  => mai_get_option( 'color-dark' ),
+		'color-dark'     => mai_get_option( 'color-medium' ),
+		'color-medium'   => mai_get_option( 'color-muted' ),
+		'color-lighter'  => mai_get_option( 'color-light' ),
+		'color-lightest' => mai_get_option( 'color-white' ),
 	];
 
 	mai_update_data( $data );

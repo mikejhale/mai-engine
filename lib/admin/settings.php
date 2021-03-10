@@ -47,7 +47,7 @@ function mai_admin_menu_pages() {
 		esc_html__( 'Template Parts', 'mai-engine' ),
 		esc_html__( 'Template Parts', 'mai-engine' ),
 		'edit_posts',
-		'edit.php?post_type=wp_template_part',
+		'edit.php?post_type=mai_template_part',
 		'',
 		10
 	);
