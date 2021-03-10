@@ -340,57 +340,6 @@ function mai_save_template_part_delete_transient( $post_id ) {
 	delete_transient( 'mai_template_parts' );
 }
 
-add_action( 'after_switch_theme', 'mai_default_theme_template_parts' );
-/**
- * Sets demo template parts on theme switch.
- *
- * @since 2.6.0
- *
- * @return void
- */
-function mai_default_theme_template_parts() {
-
-	delete_transient( 'mai_demo_template_parts' );
-
-	$notices = [];
-
-	// Import existing template parts. Skips existing template parts with content.
-	$template_parts = mai_import_template_parts( 'empty' );
-
-	if ( $template_parts ) {
-		$count = count( $template_parts );
-
-		if ( 1 === $count ) {
-			$notices[] = sprintf( '%s %s', $count, __( 'default template part imported successfully.', 'mai-engine' ) );
-		} else {
-			$notices[] = sprintf( '%s %s', $count, __( 'default template parts imported successfully.', 'mai-engine' ) );
-		}
-
-	}
-
-	// Create default template parts.
-	$template_parts = mai_create_template_parts();
-
-	if ( $template_parts ) {
-		$count = count( $template_parts );
-
-		if ( 1 === $count ) {
-			$notices[] = sprintf( '%s %s', $count, __( 'default template part automatically created.', 'mai-engine' ) );
-		} else {
-			$notices[] = sprintf( '%s %s', $count, __( 'default template parts automatically created.', 'mai-engine' ) );
-		}
-	}
-
-	if ( $notices ) {
-		// Adds admin notice(s). May not display if redirected to setup wizard.
-		add_action( 'admin_notices', function() use ( $notices ) {
-			foreach ( $notices as $notice ) {
-				printf( '<div class="notice notice-success">%s</div>', esc_html( $notice ) );
-			}
-		});
-	}
-}
-
 add_action( 'current_screen', 'mai_widgets_template_parts_admin_notice' );
 /**
  * Adds admin notice for template parts to widgets screen.
