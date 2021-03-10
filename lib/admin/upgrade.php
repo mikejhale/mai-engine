@@ -71,6 +71,7 @@ function mai_do_upgrade() {
  */
 function mai_upgrade_2_11_0() {
 	$success = true;
+	$message = '';
 	$posts   = new WP_Query(
 		[
 			'post_type'              => 'wp_template_part',
@@ -86,34 +87,41 @@ function mai_upgrade_2_11_0() {
 	if ( $posts->have_posts() ) {
 		while ( $posts->have_posts() ) : $posts->the_post();
 			global $post;
-
-			if ( mai_template_part_exists( $post->post_name ) ) {
-				continue;
-			}
-
 			$post->post_type = 'mai_template_part';
 			$post->guid      = str_replace( 'wp_template_part', 'mai_template_part', $post->guid );
 			$post_id         = wp_insert_post( $post );
 
 			if ( is_wp_error( $post_id ) ) {
 				$success = false;
+				$message = $post_id->get_error_message();
 				break;
 			}
 		endwhile;
 	}
 	wp_reset_postdata();
 
+	$notice = '';
+
 	if ( $success ) {
 		delete_transient( 'mai_template_parts' );
 		delete_transient( 'mai_demo_template_parts' );
 		flush_rewrite_rules( false );
+		$text   = __( 'Template Parts successfully updated for compatibility with WP 5.7+.', 'mai-engine' );
+		$notice = sprintf( '<div class="notice notice-success is-dismissable"><p>%s</p></div>', $text );
+
 	} else {
-		add_action( 'admin_notices', function() {
-			printf(
-				'<div class="notice notice-error"><p>%s <a target="_blank" href="https://docs.bizbudding.com/support/">%s</a>.</p></div>',
-				__( 'Error migrating template parts.', 'mai-engine' ),
-				__( 'Please contact BizBudding support.', 'mai-engine' )
-			);
+		$text   = __( 'Error migrating template parts.', 'mai-engine' );
+		$text   = $message ? $text . ' ' . $message : $text;
+		$notice = sprintf(
+			'<div class="notice notice-error"><p>%s <a target="_blank" href="https://docs.bizbudding.com/support/">%s</a>.</p></div>',
+			$text,
+			__( 'Please contact BizBudding support.', 'mai-engine' )
+		);
+	}
+
+	if ( $notice ) {
+		add_action( 'admin_notices', function() use ( $notice ) {
+			echo $notice;
 		});
 	}
 
